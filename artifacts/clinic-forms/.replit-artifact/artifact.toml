@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Clinic Forms Management System"
+version = "1.0.0"
+id = "artifacts/clinic-forms"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21325
+
+[services.development]
+run = "pnpm --filter @workspace/clinic-forms run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/clinic-forms", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/clinic-forms/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21325"
+BASE_PATH = "/"
