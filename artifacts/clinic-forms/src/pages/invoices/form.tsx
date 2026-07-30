@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRoute, useLocation } from "wouter";
 import {
   useGetInvoice,
@@ -21,10 +22,7 @@ function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
   return `${y}/${m}/${day}`;
 }
-
-function fmt3(n: number) {
-  return n.toFixed(3);
-}
+function fmt3(n: number) { return n.toFixed(3); }
 
 export default function InvoiceForm() {
   const [, params] = useRoute("/invoices/:id");
@@ -83,19 +81,15 @@ export default function InvoiceForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData((p) => ({ ...p, [e.target.name]: e.target.name === "discount" ? Number(e.target.value) : e.target.value }));
-
   const handleCustomerChange = (val: string) =>
     setFormData((p) => ({ ...p, customerId: val === "none" ? undefined : Number(val) }));
-
   const handleItemChange = (index: number, field: string, value: string | number) => {
     const items = [...formData.items];
     items[index] = { ...items[index], [field]: value };
     setFormData((p) => ({ ...p, items }));
   };
-
   const addItem = () =>
     setFormData((p) => ({ ...p, items: [...p.items, { itemCode: "", itemName: "", unit: "عام", quantity: 1, bonus: 0, price: 0 }] }));
-
   const removeItem = (index: number) =>
     setFormData((p) => ({ ...p, items: p.items.filter((_, i) => i !== index) }));
 
@@ -125,7 +119,26 @@ export default function InvoiceForm() {
   const selectedCustomer = customers?.find((c) => c.id === formData.customerId);
   const letterheadUrl = `${import.meta.env.BASE_URL}letterhead.jpg`;
 
-  // ── Print table styles ──
+  const pageStyle: React.CSSProperties = {
+    width: "210mm",
+    height: "297mm",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    backgroundImage: `url(${letterheadUrl})`,
+    backgroundSize: "100% 100%",
+    backgroundRepeat: "no-repeat",
+    WebkitPrintColorAdjust: "exact",
+    printColorAdjust: "exact",
+    paddingTop: "46mm",
+    paddingRight: "12mm",
+    paddingBottom: "0",
+    paddingLeft: "12mm",
+    fontFamily: "'Arial', 'Cairo', sans-serif",
+    color: "#000",
+    backgroundColor: "#fff",
+    position: "relative",
+  };
+
   const tdBase: React.CSSProperties = {
     border: "1px solid #000",
     padding: "2px 5px",
@@ -142,61 +155,14 @@ export default function InvoiceForm() {
     color: "#fff",
     fontSize: "13pt",
   };
-
   const MIN_ROWS = 5;
 
   /* ─────────────────────────────────────────────────────────────────
-     PRINT TEMPLATE — Visual reference: original Word document (invoice)
-     Fixed A4: 210mm × 297mm.
-     No flexbox. No grid. No responsive layout.
-
-     METADATA BOX structure (from PDF analysis, y positions):
-       Row 1 (y=63mm): Date only — right-aligned, full row
-       Row 2 (y=72mm): Invoice number — right-aligned, RED bold, full row
-       Row 3 (y=80mm): Branch (right) + Collector (left)
-       Row 4 (y=88mm): Section (right) + Notes (left)
-       Row 5 (y=96mm): Department — full row
-
-     CUSTOMER BOX:
-       Row 1: customer code + name
-       Row 2: address + currency
+     DOCUMENT INNER CONTENT — shared between portal and screen preview
   ───────────────────────────────────────────────────────────────── */
-  const printPage = (
-    <div
-      id="print-root"
-      dir="rtl"
-      style={{
-        /* ── Exact A4 ── */
-        width: "210mm",
-        height: "297mm",
-        boxSizing: "border-box",
-        overflow: "hidden",
-        /* ── Letterhead background ── */
-        backgroundImage: `url(${letterheadUrl})`,
-        backgroundSize: "100% 100%",
-        backgroundRepeat: "no-repeat",
-        WebkitPrintColorAdjust: "exact",
-        printColorAdjust: "exact",
-        /* ── Content starts below letterhead header at ~46mm ── */
-        paddingTop: "46mm",
-        paddingRight: "12mm",
-        paddingBottom: "0",
-        paddingLeft: "12mm",
-        /* ── Typography ── */
-        fontFamily: "'Arial', 'Cairo', sans-serif",
-        color: "#000",
-        backgroundColor: "#fff",
-        boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-        transform: "scale(0.65)",
-        transformOrigin: "top left",
-        position: "relative",
-      }}
-    >
-
-      {/* ══════════════════════════════════════════
-          INVOICE TITLE — in a thin bordered box, centered
-          Matches original: "فاتورة بيع نقدية" in border box
-      ══════════════════════════════════════════ */}
+  const docContent = (
+    <>
+      {/* ── INVOICE TITLE ── */}
       <div style={{ textAlign: "center", marginBottom: "3mm" }}>
         <span style={{
           border: "1px solid #000",
@@ -211,33 +177,21 @@ export default function InvoiceForm() {
         </span>
       </div>
 
-      {/* ══════════════════════════════════════════
-          METADATA BOX — bordered, 5-row structure
-          From PDF analysis (y positions in source doc):
-            Row 1 (y≈63mm): Date — right side, full width
-            Row 2 (y≈72mm): Invoice number — right side, RED, full width
-            Row 3 (y≈80mm): Branch (right) + Collector (left)
-            Row 4 (y≈88mm): Section (right) + Notes (left)
-            Row 5 (y≈96mm): Department — right side, full width
-      ══════════════════════════════════════════ */}
-      <div style={{
-        border: "1px solid #000",
-        fontSize: "12pt",
-        lineHeight: "1.8",
-        marginBottom: "2mm",
-        color: "#000",
-        fontFamily: "'Arial', 'Cairo', sans-serif",
-      }}>
+      {/* ── METADATA BOX — 5 rows ──
+          Row 1: Date (full width)
+          Row 2: Invoice number in RED (full width)
+          Row 3: Branch + Collector
+          Row 4: Section + Notes
+          Row 5: Department (full width)
+      ── */}
+      <div style={{ border: "1px solid #000", fontSize: "12pt", lineHeight: "1.8", marginBottom: "2mm", color: "#000", fontFamily: "'Arial', 'Cairo', sans-serif" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
-            {/* Row 1: Date only — right side */}
             <tr>
               <td colSpan={2} style={{ textAlign: "right", padding: "2px 8px", borderBottom: "1px solid #ccc" }}>
-                <span style={{ fontWeight: "700" }}>التاريخ</span>&nbsp;/&nbsp;
-                <span>{fmtDate(formData.invoiceDate)}م</span>
+                <span style={{ fontWeight: "700" }}>التاريخ</span>&nbsp;/&nbsp;{fmtDate(formData.invoiceDate)}م
               </td>
             </tr>
-            {/* Row 2: Invoice number — right side, RED bold */}
             <tr>
               <td colSpan={2} style={{ textAlign: "right", padding: "2px 8px", borderBottom: "1px solid #ccc" }}>
                 <span style={{ fontWeight: "700" }}>رقم الفاتورة</span>&nbsp;/&nbsp;
@@ -246,7 +200,6 @@ export default function InvoiceForm() {
                 </span>
               </td>
             </tr>
-            {/* Row 3: Branch (right) + Collector (left) */}
             <tr>
               <td style={{ width: "55%", textAlign: "right", padding: "2px 8px", borderBottom: "1px solid #ccc", borderLeft: "1px solid #ccc" }}>
                 <span style={{ fontWeight: "700" }}>الفـرع</span>&nbsp;/&nbsp;{formData.branch}
@@ -255,7 +208,6 @@ export default function InvoiceForm() {
                 <span style={{ fontWeight: "700" }}>المتحصل</span>&nbsp;/&nbsp;{formData.collector}
               </td>
             </tr>
-            {/* Row 4: Section (right) + Notes (left) */}
             <tr>
               <td style={{ width: "55%", textAlign: "right", padding: "2px 8px", borderBottom: "1px solid #ccc", borderLeft: "1px solid #ccc" }}>
                 <span style={{ fontWeight: "700" }}>القطاع</span>&nbsp;/&nbsp;{formData.section}
@@ -264,7 +216,6 @@ export default function InvoiceForm() {
                 <span style={{ fontWeight: "700" }}>ملاحظات</span>&nbsp;/&nbsp;{formData.notes}
               </td>
             </tr>
-            {/* Row 5: Department — full width */}
             <tr>
               <td colSpan={2} style={{ textAlign: "right", padding: "2px 8px" }}>
                 <span style={{ fontWeight: "700" }}>القسم</span>&nbsp;/&nbsp;{formData.department}
@@ -274,26 +225,15 @@ export default function InvoiceForm() {
         </table>
       </div>
 
-      {/* ══════════════════════════════════════════
-          CUSTOMER BOX — bordered
-      ══════════════════════════════════════════ */}
-      <div style={{
-        border: "1px solid #000",
-        fontSize: "12pt",
-        lineHeight: "1.8",
-        marginBottom: "2mm",
-        color: "#000",
-        fontFamily: "'Arial', 'Cairo', sans-serif",
-      }}>
+      {/* ── CUSTOMER BOX ── */}
+      <div style={{ border: "1px solid #000", fontSize: "12pt", lineHeight: "1.8", marginBottom: "2mm", color: "#000", fontFamily: "'Arial', 'Cairo', sans-serif" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             <tr>
               <td colSpan={2} style={{ textAlign: "right", padding: "2px 8px", borderBottom: "1px solid #ccc" }}>
-                <span style={{ fontWeight: "700" }}>رقم العميل</span>&nbsp;/&nbsp;
-                {selectedCustomer?.customerCode || "—"}
+                <span style={{ fontWeight: "700" }}>رقم العميل</span>&nbsp;/&nbsp;{selectedCustomer?.customerCode || "—"}
                 &emsp;&emsp;
-                <span style={{ fontWeight: "700" }}>المطلوب من الأخوة</span>&nbsp;/&nbsp;
-                {selectedCustomer?.name || "عميل نقدي"}
+                <span style={{ fontWeight: "700" }}>المطلوب من الأخوة</span>&nbsp;/&nbsp;{selectedCustomer?.name || "عميل نقدي"}
               </td>
             </tr>
             <tr>
@@ -308,16 +248,13 @@ export default function InvoiceForm() {
         </table>
       </div>
 
-      {/* ══════════════════════════════════════════
-          ITEMS TABLE
-          Header: teal background (#1a9e8f) with white text
-      ══════════════════════════════════════════ */}
+      {/* ── ITEMS TABLE — teal header ── */}
       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "2mm" }}>
         <thead>
           <tr>
             <th style={{ ...thBase, width: "22px" }}>م</th>
             <th style={{ ...thBase, width: "68px" }}>رقم الصنف</th>
-            <th style={{ ...thBase }}>اسـم الصنف</th>
+            <th style={thBase}>اسـم الصنف</th>
             <th style={{ ...thBase, width: "38px" }}>الوحدة</th>
             <th style={{ ...thBase, width: "38px" }}>الكمية</th>
             <th style={{ ...thBase, width: "38px" }}>البونص</th>
@@ -346,15 +283,10 @@ export default function InvoiceForm() {
         </tbody>
       </table>
 
-      {/* ══════════════════════════════════════════
-          BOTTOM SECTION — Totals (left side in RTL) + Signatures (right side)
-          Using a table to avoid flexbox.
-          Signatures: أمين المستودع | الموزع | المبيعات | المستلم
-      ══════════════════════════════════════════ */}
+      {/* ── BOTTOM: Totals + Signatures ── */}
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <tbody>
           <tr style={{ verticalAlign: "top" }}>
-            {/* Signatures — right side (appears first in RTL DOM = right) */}
             <td style={{ paddingTop: "12px" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "center", fontSize: "11pt", fontFamily: "'Arial', 'Cairo', sans-serif" }}>
                 <thead>
@@ -368,34 +300,20 @@ export default function InvoiceForm() {
                 </thead>
               </table>
             </td>
-
-            {/* Totals box — left side (appears second in RTL DOM = left) */}
             <td style={{ width: "155px", verticalAlign: "top" }}>
               <table style={{ width: "155px", borderCollapse: "collapse", border: "1px solid #000", fontSize: "12pt", fontFamily: "'Arial', 'Cairo', sans-serif" }}>
                 <tbody>
                   <tr>
-                    <td style={{ fontWeight: "700", padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "right", color: "#000" }}>
-                      الإجمالي قبل الخصم
-                    </td>
-                    <td style={{ padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "center", color: "#000", borderRight: "1px solid #000" }}>
-                      {fmt3(subtotal)}
-                    </td>
+                    <td style={{ fontWeight: "700", padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "right", color: "#000" }}>الإجمالي قبل الخصم</td>
+                    <td style={{ padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "center", color: "#000", borderRight: "1px solid #000" }}>{fmt3(subtotal)}</td>
                   </tr>
                   <tr style={{ backgroundColor: "#f5f5f5" }}>
-                    <td style={{ fontWeight: "700", padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "right", color: "#cc0000" }}>
-                      قيمـة الخصـم
-                    </td>
-                    <td style={{ padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "center", color: "#000", borderRight: "1px solid #000" }}>
-                      {fmt3(formData.discount || 0)}
-                    </td>
+                    <td style={{ fontWeight: "700", padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "right", color: "#cc0000" }}>قيمـة الخصـم</td>
+                    <td style={{ padding: "3px 6px", borderBottom: "1px solid #000", textAlign: "center", color: "#000", borderRight: "1px solid #000" }}>{fmt3(formData.discount || 0)}</td>
                   </tr>
                   <tr style={{ backgroundColor: "#e8e8e8" }}>
-                    <td style={{ fontWeight: "900", padding: "4px 6px", textAlign: "right", color: "#000", fontSize: "13pt" }}>
-                      الإجمالي
-                    </td>
-                    <td style={{ fontWeight: "900", padding: "4px 6px", textAlign: "center", color: "#000", fontSize: "13pt", borderRight: "1px solid #000" }}>
-                      {fmt3(grandTotal)}
-                    </td>
+                    <td style={{ fontWeight: "900", padding: "4px 6px", textAlign: "right", color: "#000", fontSize: "13pt" }}>الإجمالي</td>
+                    <td style={{ fontWeight: "900", padding: "4px 6px", textAlign: "center", color: "#000", fontSize: "13pt", borderRight: "1px solid #000" }}>{fmt3(grandTotal)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -403,128 +321,142 @@ export default function InvoiceForm() {
           </tr>
         </tbody>
       </table>
+    </>
+  );
 
-    </div>
+  const printPortal = createPortal(
+    <div id="print-root" dir="rtl" style={pageStyle}>
+      {docContent}
+    </div>,
+    document.getElementById("root")!
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6 print:hidden">
-        <Button variant="outline" size="icon" onClick={() => setLocation("/invoices")}>
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          {isNew ? "فاتورة بيع نقدية جديدة" : `تعديل فاتورة: ${invoice?.invoiceNumber}`}
-        </h1>
-      </div>
+    <>
+      {printPortal}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-        {/* ── Form Panel (screen only) ── */}
-        <div className="bg-card border border-card-border rounded-xl shadow-sm p-6 print:hidden overflow-hidden">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>العميل (اختياري)</Label>
-                <Select value={formData.customerId?.toString() || "none"} onValueChange={handleCustomerChange}>
-                  <SelectTrigger><SelectValue placeholder="اختر العميل..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">عميل نقدي بدون تسجيل</SelectItem>
-                    {customers?.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>الفرع / الإدارة</Label>
-                <Input name="branch" value={formData.branch} onChange={handleChange} />
-              </div>
-              <div className="space-y-2">
-                <Label>التاريخ</Label>
-                <Input type="date" name="invoiceDate" value={formData.invoiceDate} onChange={handleChange} required />
-              </div>
-              <div className="space-y-2">
-                <Label>القطاع</Label>
-                <Input name="section" value={formData.section} onChange={handleChange} />
-              </div>
-              <div className="space-y-2">
-                <Label>القسم</Label>
-                <Input name="department" value={formData.department} onChange={handleChange} />
-              </div>
-              <div className="space-y-2">
-                <Label>المحصل</Label>
-                <Input name="collector" value={formData.collector} onChange={handleChange} />
-              </div>
-              <div className="space-y-2 md:col-span-3">
-                <Label>ملاحظات</Label>
-                <Input name="notes" value={formData.notes} onChange={handleChange} />
-              </div>
-            </div>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 mb-6 print:hidden">
+          <Button variant="outline" size="icon" onClick={() => setLocation("/invoices")}>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {isNew ? "فاتورة بيع نقدية جديدة" : `تعديل فاتورة: ${invoice?.invoiceNumber}`}
+          </h1>
+        </div>
 
-            <div className="border-t border-border pt-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-lg">الأصناف</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                  <Plus className="h-4 w-4 ml-1" /> إضافة صنف
-                </Button>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+          {/* Form panel */}
+          <div className="bg-card border border-card-border rounded-xl shadow-sm p-6 print:hidden overflow-hidden">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>العميل (اختياري)</Label>
+                  <Select value={formData.customerId?.toString() || "none"} onValueChange={handleCustomerChange}>
+                    <SelectTrigger><SelectValue placeholder="اختر العميل..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">عميل نقدي بدون تسجيل</SelectItem>
+                      {customers?.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>الفرع / الإدارة</Label>
+                  <Input name="branch" value={formData.branch} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>التاريخ</Label>
+                  <Input type="date" name="invoiceDate" value={formData.invoiceDate} onChange={handleChange} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>القطاع</Label>
+                  <Input name="section" value={formData.section} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>القسم</Label>
+                  <Input name="department" value={formData.department} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>المحصل</Label>
+                  <Input name="collector" value={formData.collector} onChange={handleChange} />
+                </div>
+                <div className="space-y-2 md:col-span-3">
+                  <Label>ملاحظات</Label>
+                  <Input name="notes" value={formData.notes} onChange={handleChange} />
+                </div>
               </div>
-              <div className="space-y-3">
-                {formData.items.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-start bg-muted/20 p-3 rounded-lg border border-border">
-                    <div className="grid grid-cols-12 gap-2 flex-1">
-                      <div className="col-span-2 space-y-1"><Label className="text-xs">رقم الصنف</Label><Input className="h-8" value={item.itemCode} onChange={(e) => handleItemChange(index, "itemCode", e.target.value)} /></div>
-                      <div className="col-span-3 space-y-1"><Label className="text-xs">اسم الصنف</Label><Input className="h-8" value={item.itemName} onChange={(e) => handleItemChange(index, "itemName", e.target.value)} required /></div>
-                      <div className="col-span-2 space-y-1"><Label className="text-xs">الوحدة</Label><Input className="h-8" value={item.unit} onChange={(e) => handleItemChange(index, "unit", e.target.value)} /></div>
-                      <div className="col-span-1 space-y-1"><Label className="text-xs">الكمية</Label><Input type="number" min="1" className="h-8 p-1" value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))} required /></div>
-                      <div className="col-span-1 space-y-1"><Label className="text-xs">بونص</Label><Input type="number" min="0" className="h-8 p-1" value={item.bonus} onChange={(e) => handleItemChange(index, "bonus", Number(e.target.value))} /></div>
-                      <div className="col-span-1 space-y-1"><Label className="text-xs">السعر</Label><Input type="number" min="0" step="0.001" className="h-8 p-1" value={item.price} onChange={(e) => handleItemChange(index, "price", Number(e.target.value))} required /></div>
-                      <div className="col-span-2 space-y-1"><Label className="text-xs">الإجمالي</Label><div className="h-8 flex items-center px-2 bg-muted rounded border text-sm font-medium">{(item.quantity * item.price).toFixed(3)}</div></div>
+
+              <div className="border-t border-border pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-lg">الأصناف</h3>
+                  <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                    <Plus className="h-4 w-4 ml-1" /> إضافة صنف
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {formData.items.map((item, index) => (
+                    <div key={index} className="flex gap-2 items-start bg-muted/20 p-3 rounded-lg border border-border">
+                      <div className="grid grid-cols-12 gap-2 flex-1">
+                        <div className="col-span-2 space-y-1"><Label className="text-xs">رقم الصنف</Label><Input className="h-8" value={item.itemCode} onChange={(e) => handleItemChange(index, "itemCode", e.target.value)} /></div>
+                        <div className="col-span-3 space-y-1"><Label className="text-xs">اسم الصنف</Label><Input className="h-8" value={item.itemName} onChange={(e) => handleItemChange(index, "itemName", e.target.value)} required /></div>
+                        <div className="col-span-2 space-y-1"><Label className="text-xs">الوحدة</Label><Input className="h-8" value={item.unit} onChange={(e) => handleItemChange(index, "unit", e.target.value)} /></div>
+                        <div className="col-span-1 space-y-1"><Label className="text-xs">الكمية</Label><Input type="number" min="1" className="h-8 p-1" value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))} required /></div>
+                        <div className="col-span-1 space-y-1"><Label className="text-xs">بونص</Label><Input type="number" min="0" className="h-8 p-1" value={item.bonus} onChange={(e) => handleItemChange(index, "bonus", Number(e.target.value))} /></div>
+                        <div className="col-span-1 space-y-1"><Label className="text-xs">السعر</Label><Input type="number" min="0" step="0.001" className="h-8 p-1" value={item.price} onChange={(e) => handleItemChange(index, "price", Number(e.target.value))} required /></div>
+                        <div className="col-span-2 space-y-1"><Label className="text-xs">الإجمالي</Label><div className="h-8 flex items-center px-2 bg-muted rounded border text-sm font-medium">{(item.quantity * item.price).toFixed(3)}</div></div>
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8 mt-5" onClick={() => removeItem(index)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
-                    <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8 mt-5" onClick={() => removeItem(index)}><Trash2 className="h-4 w-4" /></Button>
+                  ))}
+                  {formData.items.length === 0 && <div className="text-center p-4 text-muted-foreground text-sm border rounded-lg border-dashed">لم يتم إضافة أصناف بعد</div>}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-border">
+                <div className="w-64 space-y-3 bg-muted/20 p-4 rounded-xl border border-border">
+                  <div className="flex justify-between items-center text-sm"><span>الإجمالي قبل الخصم:</span><span className="font-semibold">{subtotal.toFixed(3)}</span></div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span>قيمة الخصم:</span>
+                    <Input type="number" min="0" step="0.001" className="w-24 h-8 text-left" dir="ltr" name="discount" value={formData.discount} onChange={handleChange} />
                   </div>
-                ))}
-                {formData.items.length === 0 && <div className="text-center p-4 text-muted-foreground text-sm border rounded-lg border-dashed">لم يتم إضافة أصناف بعد</div>}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4 border-t border-border">
-              <div className="w-64 space-y-3 bg-muted/20 p-4 rounded-xl border border-border">
-                <div className="flex justify-between items-center text-sm"><span>الإجمالي قبل الخصم:</span><span className="font-semibold">{subtotal.toFixed(3)}</span></div>
-                <div className="flex justify-between items-center text-sm">
-                  <span>قيمة الخصم:</span>
-                  <Input type="number" min="0" step="0.001" className="w-24 h-8 text-left" dir="ltr" name="discount" value={formData.discount} onChange={handleChange} />
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-border mt-2">
-                  <span className="font-bold text-primary">الإجمالي:</span>
-                  <span className="font-bold text-xl text-primary">{grandTotal.toFixed(3)}</span>
+                  <div className="flex justify-between items-center pt-2 border-t border-border mt-2">
+                    <span className="font-bold text-primary">الإجمالي:</span>
+                    <span className="font-bold text-xl text-primary">{grandTotal.toFixed(3)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex gap-4 pt-4 border-t border-border">
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1">
-                <Save className="mr-2 h-4 w-4" />{isNew ? "حفظ الفاتورة" : "حفظ التعديلات"}
-              </Button>
-              {!isNew && (
-                <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
-                  <Printer className="mr-2 h-4 w-4" />طباعة الفاتورة
+              <div className="flex gap-4 pt-4 border-t border-border">
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1">
+                  <Save className="mr-2 h-4 w-4" />{isNew ? "حفظ الفاتورة" : "حفظ التعديلات"}
                 </Button>
-              )}
-            </div>
-          </form>
-        </div>
+                {!isNew && (
+                  <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
+                    <Printer className="mr-2 h-4 w-4" />طباعة الفاتورة
+                  </Button>
+                )}
+              </div>
+            </form>
+          </div>
 
-        {/* ── Print Preview (screen only) ── */}
-        <div
-          className="print:hidden"
-          style={{
-            overflow: "hidden",
-            width: "calc(210mm * 0.65)",
-            height: "calc(297mm * 0.65)",
-            borderRadius: "4px",
-          }}
-        >
-          {printPage}
+          {/* Screen-only scaled preview */}
+          <div
+            className="print:hidden"
+            style={{
+              width: "calc(210mm * 0.65)",
+              height: "calc(297mm * 0.65)",
+              overflow: "hidden",
+              borderRadius: "4px",
+              boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
+              flexShrink: 0,
+            }}
+          >
+            <div dir="rtl" style={{ ...pageStyle, transform: "scale(0.65)", transformOrigin: "top left" }}>
+              {docContent}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

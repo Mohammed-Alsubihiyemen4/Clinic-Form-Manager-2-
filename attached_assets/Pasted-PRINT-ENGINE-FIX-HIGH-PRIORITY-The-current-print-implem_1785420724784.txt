@@ -1,0 +1,136 @@
+PRINT ENGINE FIX - HIGH PRIORITY
+
+The current print implementation is incorrect and must be rebuilt.
+
+Current problems:
+
+1. The document preview is cropped and only part of the page is visible.
+
+2. When opening the document inside the application, the page is cut off instead of displaying the complete A4 page.
+
+3. Printing generates two blank pages or extra pages.
+
+4. The generated page size does not match the original PDF.
+
+5. The printable document is not centered correctly.
+
+6. The layout changes between preview, print and PDF.
+
+=================================================
+
+REQUIRED BEHAVIOR
+
+The uploaded PDF is the reference.
+
+The application must display exactly ONE complete A4 page.
+
+The preview must show the entire page.
+
+Nothing should be cropped.
+
+Nothing should overflow.
+
+Nothing should require scrolling inside the document.
+
+=================================================
+
+PAGE SIZE
+
+The printable page MUST always be
+
+Width = 210 mm
+
+Height = 297 mm
+
+Never larger.
+
+Never smaller.
+
+=================================================
+
+SCREEN PREVIEW
+
+The preview shown inside the application should be a scaled representation of the A4 page.
+
+Only the preview may be scaled.
+
+The actual document dimensions must NEVER change.
+
+Use transform: scale() ONLY on the preview wrapper.
+
+Never scale the printable page itself.
+
+=================================================
+
+PRINT LAYOUT
+
+The printed page must contain exactly ONE page.
+
+Do not generate page 2.
+
+Do not generate blank pages.
+
+Do not generate overflow pages.
+
+=================================================
+
+PDF
+
+The exported PDF must contain exactly one page.
+
+It must have exactly the same dimensions as the uploaded reference PDF.
+
+=================================================
+
+REMOVE ANYTHING CAUSING OVERFLOW
+
+Inspect every printable element.
+
+If any element exceeds the A4 boundary, reposition or resize it.
+
+There must be zero overflow outside the page.
+
+=================================================
+
+PRINT CSS
+
+Create a dedicated print stylesheet.
+
+Use:
+
+@page {
+    size: A4 portrait;
+    margin: 0;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+The printable container must exactly match the A4 dimensions.
+
+=================================================
+
+DO NOT SCALE DURING PRINTING
+
+Printing must use 100% scale.
+
+Do not rely on browser automatic scaling.
+
+=================================================
+
+VALIDATION
+
+Before considering the task complete:
+
+✔ The application preview shows one complete A4 page.
+
+✔ The browser print preview shows one A4 page only.
+
+✔ The exported PDF contains one page only.
+
+✔ The generated document matches the uploaded PDF.
+
+Do not stop until all four conditions are satisfied.
