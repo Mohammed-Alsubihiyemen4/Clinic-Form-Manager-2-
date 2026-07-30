@@ -1,0 +1,382 @@
+# STOP IMPLEMENTING NEW FEATURES
+
+Before writing any new code, stop and review the current implementation.
+
+The application logic is acceptable.
+
+The document rendering and printing engine is NOT acceptable.
+
+We must completely redesign the document rendering system.
+
+==================================================
+
+CRITICAL REQUIREMENT
+
+The uploaded Microsoft Word templates are NOT design references.
+
+They are the OFFICIAL MASTER TEMPLATES.
+
+Treat them as engineering drawings.
+
+Your job is NOT to redesign them.
+
+Your job is to reproduce them with the highest possible visual accuracy.
+
+The goal is that the generated document and the original Word document look visually identical when placed side by side.
+
+Target similarity:
+
+100%
+
+==================================================
+
+DO NOT USE RESPONSIVE DESIGN INSIDE DOCUMENTS
+
+The application pages can be responsive.
+
+The printable documents must NEVER be responsive.
+
+Each printable document is a fixed canvas.
+
+Exactly like Microsoft Word.
+
+Nothing should move.
+
+Nothing should resize.
+
+Nothing should wrap differently.
+
+==================================================
+
+DOCUMENT SIZE
+
+Every printable page MUST be a real A4 page.
+
+Width:
+
+210 mm
+
+Height:
+
+297 mm
+
+Never approximate.
+
+Never use percentages.
+
+Never use auto sizing.
+
+Never let browser layout determine dimensions.
+
+==================================================
+
+USE MILLIMETERS
+
+All printable templates must use millimeters instead of pixels whenever possible.
+
+Example:
+
+width:210mm;
+
+height:297mm;
+
+margin:0;
+
+padding:0;
+
+==================================================
+
+PRINT LAYOUT
+
+Do NOT build the page as a normal HTML page.
+
+Instead build a Print Template Engine.
+
+Each template should behave like a Microsoft Word page.
+
+Use a dedicated printable container.
+
+All elements must have fixed positions.
+
+==================================================
+
+NO FLEXBOX FOR DOCUMENT LAYOUT
+
+Do NOT use Flexbox.
+
+Do NOT use CSS Grid.
+
+Do NOT rely on responsive alignment.
+
+For printable templates use fixed positioning whenever necessary.
+
+Every block must remain exactly where it exists in the original document.
+
+==================================================
+
+HEADER
+
+The header must be recreated exactly.
+
+Match:
+
+Logo size
+
+Logo position
+
+Hospital name
+
+Arabic text
+
+English text
+
+Line separators
+
+Border
+
+Margins
+
+Spacing
+
+Nothing may shift.
+
+==================================================
+
+FOOTER
+
+The footer must be identical.
+
+Match:
+
+Blue stripe
+
+Green stripe
+
+Width
+
+Height
+
+Position
+
+Margins
+
+==================================================
+
+TYPOGRAPHY
+
+Typography must match the original template.
+
+Replicate:
+
+Font family
+
+Font weight
+
+Bold
+
+Underline
+
+Font size
+
+Character spacing
+
+Line spacing
+
+Paragraph spacing
+
+Word spacing
+
+Arabic stretching
+
+Text direction
+
+Alignment
+
+If the original font is unavailable,
+embed the closest Arabic font into the application.
+
+Do not substitute fonts randomly.
+
+==================================================
+
+TEXT
+
+Never rewrite the fixed text.
+
+Never reformat the fixed text.
+
+Never move the fixed text.
+
+Keep every sentence exactly as in the Word template.
+
+Only replace dynamic placeholders.
+
+==================================================
+
+DYNAMIC FIELDS
+
+Only these values may change:
+
+Patient Name
+
+Student Name
+
+Dates
+
+Age
+
+Gender
+
+Diagnosis
+
+Doctor
+
+Invoice Number
+
+Invoice Items
+
+Totals
+
+Everything else must remain fixed.
+
+==================================================
+
+TEXT POSITIONING
+
+The title must appear exactly where it appears in the original.
+
+The date must appear exactly where it appears in the original.
+
+The diagnosis must appear exactly where it appears in the original.
+
+The signatures must appear exactly where they appear in the original.
+
+No automatic positioning.
+
+==================================================
+
+NO HTML APPROXIMATION
+
+Do NOT create "similar" layouts.
+
+Do NOT estimate spacing.
+
+Measure every visible area from the uploaded template.
+
+Reproduce it.
+
+==================================================
+
+PRINT CSS
+
+Create a dedicated print stylesheet.
+
+Use:
+
+@page
+
+size:A4;
+
+margin:0;
+
+Use print-specific CSS only.
+
+The print output must not depend on screen CSS.
+
+==================================================
+
+PDF
+
+PDF generation must use exactly the same layout as printing.
+
+No scaling.
+
+No browser shrinking.
+
+No automatic margins.
+
+No layout shifts.
+
+==================================================
+
+PREVIEW
+
+The preview must be a true representation of the printed page.
+
+The preview is not a responsive page.
+
+It is a scaled visualization of an A4 sheet.
+
+==================================================
+
+QUALITY CONTROL
+
+For every template:
+
+1.
+
+Analyze the uploaded Word document.
+
+2.
+
+Measure every section visually.
+
+3.
+
+Recreate it.
+
+4.
+
+Generate Preview.
+
+5.
+
+Compare Preview against the uploaded template.
+
+6.
+
+If any difference exists:
+
+Fix it.
+
+Repeat.
+
+Continue until there are no visible differences.
+
+==================================================
+
+DO NOT CONSIDER THE TASK COMPLETE
+
+The task is NOT complete until:
+
+Header is identical.
+
+Footer is identical.
+
+Fonts match.
+
+Spacing matches.
+
+Margins match.
+
+Tables match.
+
+Borders match.
+
+Text positions match.
+
+Print preview matches.
+
+PDF matches.
+
+Printed paper matches the original Word document.
+
+==================================================
+
+FINAL GOAL
+
+A person should print the generated document and place it beside the original Microsoft Word document.
+
+If a normal user can distinguish which one was generated by the system, then the implementation is NOT acceptable.
+
+Continue refining until both documents appear visually identical.
