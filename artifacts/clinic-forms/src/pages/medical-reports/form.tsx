@@ -27,10 +27,11 @@ function fmtDate(d: string) {
 function DotLine({ value, minWidth = "130px" }: { value: string; minWidth?: string }) {
   return (
     <span style={{
-      borderBottom: "1px solid #000",
+      borderBottom: "1.5px solid #000",
       display: "inline-block",
       minWidth,
-      paddingBottom: "1px",
+      paddingBottom: "7px",
+      whiteSpace: "nowrap",
       fontFamily: "'Arial', 'Cairo', sans-serif",
       fontWeight: "700",
     }}>
@@ -148,7 +149,7 @@ export default function MedicalReportForm() {
                 fontWeight: "700",
                 textDecoration: "underline",
                 textDecorationThickness: "2px",
-                textUnderlineOffset: "4px",
+                textUnderlineOffset: "10px",
                 letterSpacing: "2px",
                 color: "#000",
                 fontFamily: "'Arial', 'Cairo', sans-serif",
@@ -161,8 +162,9 @@ export default function MedicalReportForm() {
                 fontSize: "14pt",
                 fontWeight: "700",
                 color: "#000",
-                textDecoration: "underline",
-                textUnderlineOffset: "3px",
+                borderBottom: "1.5px solid #000",
+                paddingBottom: "5px",
+                whiteSpace: "nowrap",
                 fontFamily: "'Arial', 'Cairo', sans-serif",
               }}>
                 التاريخ&nbsp;&nbsp;{fmtDate(formData.reportDate)}م
@@ -172,48 +174,50 @@ export default function MedicalReportForm() {
         </tbody>
       </table>
 
-      {/* ── PATIENT INFO — centered, two rows: name+age / diagnosis+gender ── */}
+      {/* ── PATIENT INFO — two rows, no-wrap so long names stay on one line ── */}
       <table style={{
         width: "100%",
         borderCollapse: "collapse",
-        marginBottom: "6mm",
-        fontSize: "18pt",
+        marginBottom: "5mm",
+        fontSize: "17pt",
         fontWeight: "700",
         color: "#000",
-        lineHeight: "2.2",
+        lineHeight: "2.4",
         fontFamily: "'Arial', 'Cairo', sans-serif",
+        tableLayout: "fixed",
       }}>
         <tbody>
           <tr>
-            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
-              <span style={{ fontWeight: "700" }}>اسم المريض :</span>&nbsp;
-              <DotLine value={formData.patientName} minWidth="120px" />
+            <td style={{ width: "65%", textAlign: "right", verticalAlign: "bottom", overflow: "hidden" }}>
+              <span style={{ fontWeight: "700", whiteSpace: "nowrap" }}>اسم المريض :</span>&nbsp;
+              <DotLine value={formData.patientName} minWidth="100px" />
             </td>
-            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
-              <span style={{ fontWeight: "700" }}>العمر :</span>&nbsp;
+            <td style={{ width: "35%", textAlign: "center", verticalAlign: "bottom", overflow: "hidden" }}>
+              <span style={{ fontWeight: "700", whiteSpace: "nowrap" }}>العمر :</span>&nbsp;
               <DotLine value={formData.age ? `${formData.age} سنة` : ""} minWidth="55px" />
             </td>
           </tr>
           <tr>
-            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
-              <span style={{ fontWeight: "700" }}>التشخيص :</span>&nbsp;
-              <DotLine value={formData.diagnosis} minWidth="120px" />
+            <td style={{ width: "65%", textAlign: "right", verticalAlign: "bottom", overflow: "hidden" }}>
+              <span style={{ fontWeight: "700", whiteSpace: "nowrap" }}>التشخيص :</span>&nbsp;
+              <DotLine value={formData.diagnosis} minWidth="100px" />
             </td>
-            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
-              <span style={{ fontWeight: "700" }}>الجنس :</span>&nbsp;
+            <td style={{ width: "35%", textAlign: "center", verticalAlign: "bottom", overflow: "hidden" }}>
+              <span style={{ fontWeight: "700", whiteSpace: "nowrap" }}>الجنس :</span>&nbsp;
               <DotLine value={genderLetter} minWidth="40px" />
             </td>
           </tr>
         </tbody>
       </table>
 
-      {/* ── REPORT BODY TEXT — 22pt, bold, right-aligned ── */}
+      {/* ── REPORT BODY TEXT — 20pt, bold, right-aligned, with breathing room ── */}
       <div style={{
-        fontSize: "22pt",
+        fontSize: "20pt",
         fontWeight: "700",
-        lineHeight: "1.55",
+        lineHeight: "1.75",
         textAlign: "right",
-        marginBottom: "6mm",
+        marginTop: "6mm",
+        marginBottom: "8mm",
         color: "#000",
         whiteSpace: "pre-wrap",
         fontFamily: "'Arial', 'Cairo', sans-serif",
@@ -224,17 +228,21 @@ export default function MedicalReportForm() {
             : "المذكور أعلاه يعاني من اضطرابات نفسية وعصبية (اكتئاب)  مع نوبات تشنجات متكررة (صرع)وبحاجة إلى عمل تخطيط للدماغ وعلاجات باستمرار مع متابعة عيادة الباطنية و الأعصاب بانتظام .")}
       </div>
 
-      {/* ── FOOTER NOTE ── */}
+      {/* ── FOOTER NOTE — border-bottom so line doesn't touch text ── */}
       <div style={{
         fontSize: "14pt",
         fontWeight: "700",
-        textDecoration: "underline",
-        textUnderlineOffset: "3px",
         color: "#000",
         textAlign: "right",
         fontFamily: "'Arial', 'Cairo', sans-serif",
       }}>
-        هذا بناءً على طلب المريض&nbsp;&nbsp;وحسب التقرير المرفق معه&nbsp;&nbsp;ولا يعتبر تقرير جنائياً
+        <span style={{
+          borderBottom: "1.5px solid #000",
+          paddingBottom: "5px",
+          display: "inline",
+        }}>
+          هذا بناءً على طلب المريض&nbsp;&nbsp;وحسب التقرير المرفق معه&nbsp;&nbsp;ولا يعتبر تقرير جنائياً
+        </span>
       </div>
 
       {/* ── RIGHT SIGNATURE: طبيب المعالج ── */}

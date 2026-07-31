@@ -129,7 +129,7 @@ export default function TrainingCertificateForm() {
           fontFamily: NASKH,
           textDecoration: "underline",
           textDecorationThickness: "2px",
-          textUnderlineOffset: "5px",
+          textUnderlineOffset: "10px",
           letterSpacing: "6px",
           color: "#000",
         }}>
@@ -156,10 +156,11 @@ export default function TrainingCertificateForm() {
         {isFemale ? "أن الطالبة" : "أن الطالب"}&nbsp;/&nbsp;
         <span style={{
           fontWeight: "700",
-          textDecoration: "underline",
-          textUnderlineOffset: "3px",
           display: "inline-block",
           minWidth: "160px",
+          borderBottom: "1.5px solid #000",
+          paddingBottom: "7px",
+          whiteSpace: "nowrap",
         }}>
           {formData.traineeName || "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"}
         </span>
