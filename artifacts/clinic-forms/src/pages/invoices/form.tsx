@@ -439,20 +439,32 @@ export default function InvoiceForm() {
             </form>
           </div>
 
-          {/* Screen-only scaled preview */}
-          <div
-            className="print:hidden"
-            style={{
-              width: "calc(210mm * 0.65)",
-              height: "calc(297mm * 0.65)",
-              overflow: "hidden",
-              borderRadius: "4px",
-              boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-              flexShrink: 0,
-            }}
-          >
-            <div dir="rtl" style={{ ...pageStyle, transform: "scale(0.65)", transformOrigin: "top left" }}>
-              {docContent}
+          {/* Screen-only scaled preview — RTL: anchor to top-right */}
+          <div className="print:hidden w-full flex justify-center">
+            <div
+              style={{
+                position: "relative",
+                width: "calc(210mm * 0.55)",
+                height: "calc(297mm * 0.55)",
+                overflow: "hidden",
+                borderRadius: "4px",
+                boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                dir="rtl"
+                style={{
+                  ...pageStyle,
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  transform: "scale(0.55)",
+                  transformOrigin: "top right",
+                }}
+              >
+                {docContent}
+              </div>
             </div>
           </div>
         </div>

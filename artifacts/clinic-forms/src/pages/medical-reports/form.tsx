@@ -172,7 +172,7 @@ export default function MedicalReportForm() {
         </tbody>
       </table>
 
-      {/* ── PATIENT INFO TABLE ── */}
+      {/* ── PATIENT INFO — centered, two rows: name+age / diagnosis+gender ── */}
       <table style={{
         width: "100%",
         borderCollapse: "collapse",
@@ -180,26 +180,26 @@ export default function MedicalReportForm() {
         fontSize: "18pt",
         fontWeight: "700",
         color: "#000",
-        lineHeight: "2.0",
+        lineHeight: "2.2",
         fontFamily: "'Arial', 'Cairo', sans-serif",
       }}>
         <tbody>
           <tr>
-            <td style={{ width: "65%", textAlign: "right", verticalAlign: "bottom", paddingLeft: "6mm" }}>
+            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
               <span style={{ fontWeight: "700" }}>اسم المريض :</span>&nbsp;
               <DotLine value={formData.patientName} minWidth="120px" />
             </td>
-            <td style={{ width: "35%", textAlign: "right", verticalAlign: "bottom" }}>
+            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
               <span style={{ fontWeight: "700" }}>العمر :</span>&nbsp;
-              <DotLine value={formData.age ? `y ${formData.age}` : ""} minWidth="55px" />
+              <DotLine value={formData.age ? `${formData.age} سنة` : ""} minWidth="55px" />
             </td>
           </tr>
           <tr>
-            <td style={{ width: "65%", textAlign: "right", verticalAlign: "bottom", paddingLeft: "6mm" }}>
+            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
               <span style={{ fontWeight: "700" }}>التشخيص :</span>&nbsp;
               <DotLine value={formData.diagnosis} minWidth="120px" />
             </td>
-            <td style={{ width: "35%", textAlign: "right", verticalAlign: "bottom" }}>
+            <td style={{ width: "50%", textAlign: "center", verticalAlign: "bottom" }}>
               <span style={{ fontWeight: "700" }}>الجنس :</span>&nbsp;
               <DotLine value={genderLetter} minWidth="40px" />
             </td>
@@ -207,12 +207,12 @@ export default function MedicalReportForm() {
         </tbody>
       </table>
 
-      {/* ── REPORT BODY TEXT — 22pt, bold, justified ── */}
+      {/* ── REPORT BODY TEXT — 22pt, bold, right-aligned ── */}
       <div style={{
         fontSize: "22pt",
         fontWeight: "700",
         lineHeight: "1.55",
-        textAlign: "justify",
+        textAlign: "right",
         marginBottom: "6mm",
         color: "#000",
         whiteSpace: "pre-wrap",
@@ -363,19 +363,31 @@ export default function MedicalReportForm() {
               Inner clone: identical styling to #print-root + transform: scale(0.65).
               NOT #print-root — the portal handles the real print element.
           ── */}
-          <div
-            className="print:hidden"
-            style={{
-              width: "calc(210mm * 0.65)",
-              height: "calc(297mm * 0.65)",
-              overflow: "hidden",
-              borderRadius: "4px",
-              boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-              flexShrink: 0,
-            }}
-          >
-            <div dir="rtl" style={{ ...pageStyle, transform: "scale(0.65)", transformOrigin: "top left" }}>
-              {docContent}
+          <div className="print:hidden w-full flex justify-center">
+            <div
+              style={{
+                position: "relative",
+                width: "calc(210mm * 0.55)",
+                height: "calc(297mm * 0.55)",
+                overflow: "hidden",
+                borderRadius: "4px",
+                boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                dir="rtl"
+                style={{
+                  ...pageStyle,
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  transform: "scale(0.55)",
+                  transformOrigin: "top right",
+                }}
+              >
+                {docContent}
+              </div>
             </div>
           </div>
         </div>
