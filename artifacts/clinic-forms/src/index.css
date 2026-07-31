@@ -242,14 +242,12 @@
     inset: -1px;
   }
 
+  /* Hide the print portal from screen — only shown during actual printing */
+  #print-root {
+    display: none !important;
+  }
+
   @media print {
-    /*
-     * Print engine — portal approach.
-     * #print-root is rendered via React createPortal as a DIRECT child of #root.
-     * Hiding #root > * removes all app chrome from flow (no extra pages).
-     * Only #print-root is shown, at full A4, anchored top-left.
-     * transform: none ensures browser prints at 100% — no scaling artifacts.
-     */
     html, body {
       margin: 0 !important;
       padding: 0 !important;
