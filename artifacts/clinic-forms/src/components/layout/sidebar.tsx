@@ -5,7 +5,6 @@ import {
   Stethoscope,
   Receipt,
   Package,
-  Users,
   UserRound,
   ShieldCheck,
   Settings,
@@ -140,19 +139,18 @@ export function Sidebar() {
     >
       {/* ── Logo / Header ── */}
       <div
-        className="shrink-0 flex flex-col items-center justify-center gap-2 py-5 px-4"
+        className="shrink-0 flex flex-col items-center justify-center gap-1.5 py-4 px-4"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
       >
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
-          style={{ background: "linear-gradient(135deg, #1a9e8f 0%, #0d6e64 100%)" }}
-        >
-          <Stethoscope className="w-7 h-7 text-white" />
-        </div>
+        <img
+          src={`${import.meta.env.BASE_URL}logo-assar.jpg`}
+          alt="مستوصف العصار"
+          className="w-28 object-contain"
+          style={{ filter: "brightness(1.05) drop-shadow(0 2px 8px rgba(26,158,143,0.3))" }}
+        />
         <div className="text-center">
-          <h1 className="text-base font-bold text-white leading-tight">مستوصف العصار</h1>
           <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-            AL-Assar Medical Center
+            AL-Assar Medical Clinic
           </p>
         </div>
       </div>

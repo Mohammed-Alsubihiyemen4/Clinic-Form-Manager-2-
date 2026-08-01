@@ -69,33 +69,33 @@
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  /* Medical Teal & Navy Palette */
-  --background: 210 30% 98%;
+  /* Al-Assar Medical Clinic — Teal & Navy Palette */
+  --background: 195 30% 97%;
   --foreground: 222 47% 11%;
   
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 180 70% 30%; /* Teal */
+  --border: 196 30% 88%;
+  --input: 196 30% 88%;
+  --ring: 178 72% 28%; /* Medical Teal */
 
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
-  --card-border: 214 32% 91%;
+  --card-border: 196 28% 88%;
 
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
-  --popover-border: 214 32% 91%;
+  --popover-border: 196 28% 88%;
 
-  --primary: 180 70% 30%; /* Medical Teal */
+  --primary: 178 72% 28%; /* Al-Assar Teal */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 222 47% 11%; /* Navy */
+  --secondary: 215 45% 13%; /* Deep Navy */
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
+  --muted: 196 25% 94%;
+  --muted-foreground: 215 18% 48%;
 
-  --accent: 180 50% 95%; /* Light teal background */
-  --accent-foreground: 180 70% 30%;
+  --accent: 178 55% 93%; /* Light teal background */
+  --accent-foreground: 178 72% 25%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
