@@ -10,6 +10,7 @@ import {
   Settings,
   History,
   LogOut,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth";
@@ -123,7 +124,12 @@ function getRoleLabel(role: string) {
   }
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const [location] = useLocation();
   const { user, logout, hasAccess } = useAuth();
 
@@ -131,17 +137,36 @@ export function Sidebar() {
 
   return (
     <aside
-      className="fixed right-0 top-0 bottom-0 w-64 flex flex-col z-50"
+      className={cn(
+        // Base styles
+        "fixed top-0 bottom-0 right-0 w-64 flex flex-col z-50 transition-transform duration-300 ease-in-out",
+        // Desktop: always visible
+        "lg:translate-x-0",
+        // Mobile: slide in/out
+        open ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+      )}
       style={{
         background: "linear-gradient(180deg, #0d2137 0%, #0a3330 60%, #0d2137 100%)",
         borderLeft: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: open ? "-4px 0 24px rgba(0,0,0,0.4)" : "none",
       }}
     >
       {/* ── Logo / Header ── */}
       <div
-        className="shrink-0 flex flex-col items-center justify-center gap-1.5 py-4 px-4"
+        className="shrink-0 flex flex-col items-center justify-center gap-1.5 py-4 px-4 relative"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
       >
+        {/* Mobile close button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden absolute left-3 top-3 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+            style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
         <img
           src={`${import.meta.env.BASE_URL}logo-assar.jpg`}
           alt="مستوصف العصار"
@@ -166,7 +191,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 font-medium text-sm group",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 font-medium text-sm group relative",
                 isActive
                   ? `${item.activeBg} ${item.color}`
                   : `text-white/60 ${item.hoverBg} hover:text-white/90`
@@ -182,7 +207,7 @@ export function Sidebar() {
               />
               <item.icon
                 className={cn(
-                  "h-4.5 w-4.5 shrink-0 transition-colors duration-150",
+                  "shrink-0 transition-colors duration-150",
                   isActive ? item.color : "text-white/40 group-hover:text-white/70"
                 )}
                 style={{ width: "18px", height: "18px" }}
