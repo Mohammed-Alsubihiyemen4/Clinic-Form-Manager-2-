@@ -33,9 +33,10 @@ async function logAudit(action: string, formNumber: string, ip?: string) {
 }
 
 async function enrichInvoice(invoice: typeof invoicesTable.$inferSelect) {
-  let customerName: string | null = null;
+  // Use inline customerName first, fall back to customer table lookup
+  let customerName: string | null = (invoice as any).customerName ?? null;
   let customerCode: string | null = null;
-  if (invoice.customerId) {
+  if (!customerName && invoice.customerId) {
     const [cust] = await db.select().from(customersTable).where(eq(customersTable.id, invoice.customerId));
     customerName = cust?.name ?? null;
     customerCode = cust?.customerCode ?? null;
@@ -114,6 +115,7 @@ router.post("/invoices", async (req, res): Promise<void> => {
     invoiceNumber: invNum,
     invoiceDate: invoiceData.invoiceDate,
     customerId: invoiceData.customerId ?? null,
+    customerName: (invoiceData as any).customerName ?? null,
     branch: invoiceData.branch ?? null,
     section: invoiceData.section ?? null,
     department: invoiceData.department ?? null,

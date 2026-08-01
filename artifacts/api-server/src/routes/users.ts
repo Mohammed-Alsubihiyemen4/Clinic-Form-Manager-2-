@@ -86,6 +86,9 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
   if (parsed.data.password != null) {
     updateData.passwordHash = Buffer.from(parsed.data.password).toString("base64");
   }
+  if ((parsed.data as any).permissions !== undefined) {
+    updateData.permissions = (parsed.data as any).permissions;
+  }
 
   const [user] = await db
     .update(usersTable)

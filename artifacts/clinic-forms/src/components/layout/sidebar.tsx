@@ -1,70 +1,237 @@
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Stethoscope, 
-  Receipt, 
-  Users, 
-  UserRound, 
-  ShieldCheck, 
+import {
+  LayoutDashboard,
+  FileText,
+  Stethoscope,
+  Receipt,
+  Package,
+  Users,
+  UserRound,
+  ShieldCheck,
   Settings,
-  History
+  History,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/auth";
 
 const NAV_ITEMS = [
-  { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
-  { href: "/training-certificates", label: "إفادات التدريب", icon: FileText },
-  { href: "/medical-reports", label: "التقارير الطبية", icon: Stethoscope },
-  { href: "/invoices", label: "فواتير البيع", icon: Receipt },
-  { href: "/customers", label: "العملاء", icon: Users },
-  { href: "/doctors", label: "الأطباء", icon: UserRound },
-  { href: "/users", label: "المستخدمون", icon: ShieldCheck },
-  { href: "/audit-logs", label: "سجل العمليات", icon: History },
-  { href: "/settings", label: "الإعدادات", icon: Settings },
+  {
+    href: "/",
+    label: "لوحة التحكم",
+    icon: LayoutDashboard,
+    page: "dashboard",
+    color: "text-teal-300",
+    activeBg: "bg-teal-600/25",
+    hoverBg: "hover:bg-teal-600/15",
+    dot: "#2dd4bf",
+  },
+  {
+    href: "/training-certificates",
+    label: "إفادات التدريب",
+    icon: FileText,
+    page: "training-certificates",
+    color: "text-blue-300",
+    activeBg: "bg-blue-600/25",
+    hoverBg: "hover:bg-blue-600/15",
+    dot: "#60a5fa",
+  },
+  {
+    href: "/medical-reports",
+    label: "التقارير الطبية",
+    icon: Stethoscope,
+    page: "medical-reports",
+    color: "text-emerald-300",
+    activeBg: "bg-emerald-600/25",
+    hoverBg: "hover:bg-emerald-600/15",
+    dot: "#6ee7b7",
+  },
+  {
+    href: "/invoices",
+    label: "فواتير البيع",
+    icon: Receipt,
+    page: "invoices",
+    color: "text-amber-300",
+    activeBg: "bg-amber-600/25",
+    hoverBg: "hover:bg-amber-600/15",
+    dot: "#fcd34d",
+  },
+  {
+    href: "/products",
+    label: "الأصناف",
+    icon: Package,
+    page: "products",
+    color: "text-violet-300",
+    activeBg: "bg-violet-600/25",
+    hoverBg: "hover:bg-violet-600/15",
+    dot: "#c4b5fd",
+  },
+  {
+    href: "/doctors",
+    label: "الأطباء",
+    icon: UserRound,
+    page: "doctors",
+    color: "text-cyan-300",
+    activeBg: "bg-cyan-600/25",
+    hoverBg: "hover:bg-cyan-600/15",
+    dot: "#67e8f9",
+  },
+  {
+    href: "/users",
+    label: "المستخدمون",
+    icon: ShieldCheck,
+    page: "users",
+    color: "text-indigo-300",
+    activeBg: "bg-indigo-600/25",
+    hoverBg: "hover:bg-indigo-600/15",
+    dot: "#a5b4fc",
+  },
+  {
+    href: "/audit-logs",
+    label: "سجل العمليات",
+    icon: History,
+    page: "audit-logs",
+    color: "text-slate-300",
+    activeBg: "bg-slate-600/25",
+    hoverBg: "hover:bg-slate-600/15",
+    dot: "#cbd5e1",
+  },
+  {
+    href: "/settings",
+    label: "الإعدادات",
+    icon: Settings,
+    page: "settings",
+    color: "text-rose-300",
+    activeBg: "bg-rose-600/25",
+    hoverBg: "hover:bg-rose-600/15",
+    dot: "#fda4af",
+  },
 ];
+
+function getInitials(name: string) {
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) return parts[0][0] + parts[1][0];
+  return name.slice(0, 2);
+}
+
+function getRoleLabel(role: string) {
+  switch (role) {
+    case "administrator": return "مدير النظام";
+    case "manager": return "مدير";
+    case "employee": return "موظف";
+    case "viewer": return "مشاهد";
+    default: return role;
+  }
+}
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { user, logout, hasAccess } = useAuth();
+
+  const visibleItems = NAV_ITEMS.filter((item) => hasAccess(item.page));
 
   return (
-    <aside className="fixed right-0 top-0 bottom-0 w-64 bg-sidebar border-l border-sidebar-border text-sidebar-foreground flex flex-col z-50">
-      <div className="h-16 flex items-center justify-center border-b border-sidebar-border px-6">
-        <h1 className="text-xl font-bold tracking-tight text-white">مستوصف العصار</h1>
+    <aside
+      className="fixed right-0 top-0 bottom-0 w-64 flex flex-col z-50"
+      style={{
+        background: "linear-gradient(180deg, #0d2137 0%, #0a3330 60%, #0d2137 100%)",
+        borderLeft: "1px solid rgba(255,255,255,0.07)",
+      }}
+    >
+      {/* ── Logo / Header ── */}
+      <div
+        className="shrink-0 flex flex-col items-center justify-center gap-2 py-5 px-4"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+      >
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
+          style={{ background: "linear-gradient(135deg, #1a9e8f 0%, #0d6e64 100%)" }}
+        >
+          <Stethoscope className="w-7 h-7 text-white" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-base font-bold text-white leading-tight">مستوصف العصار</h1>
+          <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+            AL-Assar Medical Center
+          </p>
+        </div>
       </div>
-      
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
+
+      {/* ── Navigation ── */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5">
+        {visibleItems.map((item) => {
+          const isActive =
+            location === item.href ||
+            (item.href !== "/" && location.startsWith(item.href));
           return (
-            <Link 
-              key={item.href} 
+            <Link
+              key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors font-medium text-sm",
-                isActive 
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground" 
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 font-medium text-sm group",
+                isActive
+                  ? `${item.activeBg} ${item.color}`
+                  : `text-white/60 ${item.hoverBg} hover:text-white/90`
               )}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {item.label}
+              {/* Colored dot for active state */}
+              <span
+                className="shrink-0 w-1.5 h-1.5 rounded-full transition-opacity duration-150"
+                style={{
+                  background: item.dot,
+                  opacity: isActive ? 1 : 0,
+                }}
+              />
+              <item.icon
+                className={cn(
+                  "h-4.5 w-4.5 shrink-0 transition-colors duration-150",
+                  isActive ? item.color : "text-white/40 group-hover:text-white/70"
+                )}
+                style={{ width: "18px", height: "18px" }}
+              />
+              <span className="truncate">{item.label}</span>
+
+              {/* Active right border accent */}
+              {isActive && (
+                <span
+                  className="absolute right-0 w-0.5 h-6 rounded-l"
+                  style={{ background: item.dot }}
+                />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold">أ.م</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-white">أحمد مدير</span>
-            <span className="text-xs text-sidebar-foreground/60">مدير النظام</span>
+      {/* ── User info + logout ── */}
+      {user && (
+        <div
+          className="shrink-0 p-3"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <div className="flex items-center gap-3 px-2 py-2">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold text-white shadow"
+              style={{ background: "linear-gradient(135deg, #1a9e8f, #0d6e64)" }}
+            >
+              {getInitials(user.fullName)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{user.fullName}</p>
+              <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
+                {getRoleLabel(user.role)}
+              </p>
+            </div>
+            <button
+              onClick={logout}
+              title="تسجيل الخروج"
+              className="shrink-0 p-1.5 rounded-lg transition-colors hover:bg-white/10"
+            >
+              <LogOut className="w-4 h-4 text-white/40 hover:text-red-400" />
+            </button>
           </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 }

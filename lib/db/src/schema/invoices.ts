@@ -7,6 +7,7 @@ export const invoicesTable = pgTable("invoices", {
   invoiceNumber: text("invoice_number").notNull().unique(),
   invoiceDate: text("invoice_date").notNull(), // YYYY-MM-DD
   customerId: integer("customer_id"),
+  customerName: text("customer_name"), // free-text customer name (no account required)
   branch: text("branch"),
   section: text("section"),
   department: text("department"),

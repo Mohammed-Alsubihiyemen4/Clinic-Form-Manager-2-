@@ -1,0 +1,3 @@
+- [Auth System](auth-system.md) — session-based login via localStorage; admin user `admin/admin123` created; permissions per user stored as JSON array in users.permissions column
+- [Products & Invoice Customer](products-invoice.md) — products table added (name/unit/price); invoice customerName is now free-text field (no customer account needed); product picker dialog in invoice form
+- [Sidebar Colors](sidebar-design.md) — each nav item has distinct color (teal/blue/emerald/amber/violet/cyan/indigo/slate/rose); sidebar uses gradient background matching clinic brand

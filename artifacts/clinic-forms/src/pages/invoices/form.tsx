@@ -1,21 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRoute, useLocation } from "wouter";
 import {
   useGetInvoice,
   useCreateInvoice,
   useUpdateInvoice,
-  useListCustomers,
   getGetInvoiceQueryKey,
   InvoiceItemInput,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Printer, Save, Plus, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowRight, Printer, Save, Plus, Trash2, Package, Search } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Product } from "@/pages/products";
+
+const BASE = import.meta.env.BASE_URL;
 
 function fmtDate(d: string) {
   if (!d) return "";
@@ -35,13 +42,12 @@ export default function InvoiceForm() {
   const { data: invoice, isLoading } = useGetInvoice(id!, {
     query: { enabled: !isNew, queryKey: getGetInvoiceQueryKey(id!) },
   });
-  const { data: customers } = useListCustomers();
   const createMutation = useCreateInvoice();
   const updateMutation = useUpdateInvoice();
 
   const [formData, setFormData] = useState({
     invoiceDate: new Date().toISOString().split("T")[0],
-    customerId: undefined as number | undefined,
+    customerName: "",
     branch: "الإدارة العامة",
     section: "قطاع عام",
     department: "القسم العام",
@@ -51,11 +57,26 @@ export default function InvoiceForm() {
     items: [] as InvoiceItemInput[],
   });
 
+  // Product picker state
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [pickerTargetIndex, setPickerTargetIndex] = useState<number | null>(null);
+
+  const loadProducts = useCallback(async () => {
+    try {
+      const res = await fetch(`${BASE}api/products`);
+      if (res.ok) setProducts(await res.json());
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => { loadProducts(); }, [loadProducts]);
+
   useEffect(() => {
     if (invoice) {
       setFormData({
         invoiceDate: invoice.invoiceDate.split("T")[0],
-        customerId: invoice.customerId || undefined,
+        customerName: (invoice as any).customerName || invoice.customerName || "",
         branch: invoice.branch || "",
         section: invoice.section || "",
         department: invoice.department || "",
@@ -80,18 +101,47 @@ export default function InvoiceForm() {
   }, [invoice, isNew]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setFormData((p) => ({ ...p, [e.target.name]: e.target.name === "discount" ? Number(e.target.value) : e.target.value }));
-  const handleCustomerChange = (val: string) =>
-    setFormData((p) => ({ ...p, customerId: val === "none" ? undefined : Number(val) }));
+    setFormData((p) => ({
+      ...p,
+      [e.target.name]: e.target.name === "discount" ? Number(e.target.value) : e.target.value,
+    }));
+
   const handleItemChange = (index: number, field: string, value: string | number) => {
     const items = [...formData.items];
     items[index] = { ...items[index], [field]: value };
     setFormData((p) => ({ ...p, items }));
   };
   const addItem = () =>
-    setFormData((p) => ({ ...p, items: [...p.items, { itemCode: "", itemName: "", unit: "عام", quantity: 1, bonus: 0, price: 0 }] }));
+    setFormData((p) => ({
+      ...p,
+      items: [...p.items, { itemCode: "", itemName: "", unit: "عام", quantity: 1, bonus: 0, price: 0 }],
+    }));
   const removeItem = (index: number) =>
     setFormData((p) => ({ ...p, items: p.items.filter((_, i) => i !== index) }));
+
+  const openPicker = (index: number) => {
+    setPickerTargetIndex(index);
+    setPickerSearch("");
+    setPickerOpen(true);
+  };
+
+  const selectProduct = (product: Product) => {
+    if (pickerTargetIndex !== null) {
+      const items = [...formData.items];
+      items[pickerTargetIndex] = {
+        ...items[pickerTargetIndex],
+        itemName: product.name,
+        unit: product.unit,
+        price: product.price,
+      };
+      setFormData((p) => ({ ...p, items }));
+    }
+    setPickerOpen(false);
+  };
+
+  const filteredProducts = products.filter(
+    (p) => p.isActive && p.name.toLowerCase().includes(pickerSearch.toLowerCase())
+  );
 
   const subtotal = formData.items.reduce((s, it) => s + it.quantity * it.price, 0);
   const grandTotal = subtotal - (formData.discount || 0);
@@ -102,22 +152,31 @@ export default function InvoiceForm() {
       toast({ title: "خطأ", description: "يجب إضافة صنف واحد على الأقل", variant: "destructive" });
       return;
     }
-    const cleanData = { ...formData, items: formData.items.filter((it) => it.itemName.trim()) };
+    const cleanData = {
+      ...formData,
+      items: formData.items.filter((it) => it.itemName.trim()),
+    };
     if (isNew) {
-      createMutation.mutate({ data: cleanData }, {
-        onSuccess: (data) => { toast({ title: "تم إنشاء الفاتورة بنجاح" }); setLocation(`/invoices/${data.id}`); },
+      createMutation.mutate({ data: cleanData as any }, {
+        onSuccess: (data) => {
+          toast({ title: "تم إنشاء الفاتورة بنجاح" });
+          setLocation(`/invoices/${data.id}`);
+        },
       });
     } else {
-      updateMutation.mutate({ id, data: cleanData }, {
-        onSuccess: () => { toast({ title: "تم تحديث الفاتورة بنجاح" }); queryClient.invalidateQueries({ queryKey: getGetInvoiceQueryKey(id) }); },
+      updateMutation.mutate({ id, data: cleanData as any }, {
+        onSuccess: () => {
+          toast({ title: "تم تحديث الفاتورة بنجاح" });
+          queryClient.invalidateQueries({ queryKey: getGetInvoiceQueryKey(id) });
+        },
       });
     }
   };
 
-  if (isLoading && !isNew) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
+  if (isLoading && !isNew)
+    return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
 
-  const selectedCustomer = customers?.find((c) => c.id === formData.customerId);
-  const letterheadUrl = `${import.meta.env.BASE_URL}letterhead.jpg`;
+  const letterheadUrl = `${BASE}letterhead.jpg`;
 
   const pageStyle: React.CSSProperties = {
     width: "210mm",
@@ -157,9 +216,8 @@ export default function InvoiceForm() {
   };
   const MIN_ROWS = 5;
 
-  /* ─────────────────────────────────────────────────────────────────
-     DOCUMENT INNER CONTENT — shared between portal and screen preview
-  ───────────────────────────────────────────────────────────────── */
+  const printCustomerName = formData.customerName || "عميل نقدي";
+
   const docContent = (
     <>
       {/* ── INVOICE TITLE ── */}
@@ -177,13 +235,7 @@ export default function InvoiceForm() {
         </span>
       </div>
 
-      {/* ── METADATA BOX — 5 rows ──
-          Row 1: Date (full width)
-          Row 2: Invoice number in RED (full width)
-          Row 3: Branch + Collector
-          Row 4: Section + Notes
-          Row 5: Department (full width)
-      ── */}
+      {/* ── METADATA BOX ── */}
       <div style={{ border: "1px solid #000", fontSize: "12pt", lineHeight: "1.8", marginBottom: "2mm", color: "#000", fontFamily: "'Arial', 'Cairo', sans-serif" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
@@ -231,14 +283,12 @@ export default function InvoiceForm() {
           <tbody>
             <tr>
               <td colSpan={2} style={{ textAlign: "right", padding: "2px 8px", borderBottom: "1px solid #ccc" }}>
-                <span style={{ fontWeight: "700" }}>رقم العميل</span>&nbsp;/&nbsp;{selectedCustomer?.customerCode || "—"}
-                &emsp;&emsp;
-                <span style={{ fontWeight: "700" }}>المطلوب من الأخوة</span>&nbsp;/&nbsp;{selectedCustomer?.name || "عميل نقدي"}
+                <span style={{ fontWeight: "700" }}>المطلوب من الأخوة</span>&nbsp;/&nbsp;{printCustomerName}
               </td>
             </tr>
             <tr>
               <td style={{ width: "60%", textAlign: "right", padding: "2px 8px", borderLeft: "1px solid #ccc" }}>
-                <span style={{ fontWeight: "700" }}>العنوان</span>&nbsp;/&nbsp;{selectedCustomer?.address || "اليمن"}
+                <span style={{ fontWeight: "700" }}>العنوان</span>&nbsp;/&nbsp;اليمن
               </td>
               <td style={{ width: "40%", textAlign: "right", padding: "2px 8px" }}>
                 <span style={{ fontWeight: "700" }}>عملة المستند</span>&nbsp;/&nbsp;ريال يمني
@@ -248,7 +298,7 @@ export default function InvoiceForm() {
         </table>
       </div>
 
-      {/* ── ITEMS TABLE — teal header ── */}
+      {/* ── ITEMS TABLE ── */}
       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "2mm" }}>
         <thead>
           <tr>
@@ -335,6 +385,54 @@ export default function InvoiceForm() {
     <>
       {printPortal}
 
+      {/* Product Picker Dialog */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-violet-500" />
+              اختر صنفاً
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative mb-3">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pr-9"
+              placeholder="ابحث عن صنف..."
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-1">
+            {filteredProducts.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8 text-sm">
+                {products.length === 0
+                  ? "لا توجد أصناف. أضف أصنافاً من صفحة الأصناف أولاً."
+                  : "لا توجد نتائج للبحث"}
+              </div>
+            ) : (
+              filteredProducts.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => selectProduct(p)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm hover:bg-muted/60 transition-colors text-right"
+                >
+                  <div>
+                    <p className="font-semibold text-foreground">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.unit}</p>
+                  </div>
+                  <span className="font-mono font-bold text-primary text-sm">
+                    {p.price.toFixed(3)}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-6">
         <div className="flex items-center gap-4 mb-6 print:hidden">
           <Button variant="outline" size="icon" onClick={() => setLocation("/invoices")}>
@@ -350,15 +448,15 @@ export default function InvoiceForm() {
           <div className="bg-card border border-card-border rounded-xl shadow-sm p-6 print:hidden overflow-hidden">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Customer name — free text */}
                 <div className="space-y-2">
-                  <Label>العميل (اختياري)</Label>
-                  <Select value={formData.customerId?.toString() || "none"} onValueChange={handleCustomerChange}>
-                    <SelectTrigger><SelectValue placeholder="اختر العميل..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">عميل نقدي بدون تسجيل</SelectItem>
-                      {customers?.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label>اسم العميل (اختياري)</Label>
+                  <Input
+                    name="customerName"
+                    value={formData.customerName}
+                    onChange={handleChange}
+                    placeholder="عميل نقدي"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>الفرع / الإدارة</Label>
@@ -386,6 +484,7 @@ export default function InvoiceForm() {
                 </div>
               </div>
 
+              {/* Items */}
               <div className="border-t border-border pt-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold text-lg">الأصناف</h3>
@@ -397,24 +496,75 @@ export default function InvoiceForm() {
                   {formData.items.map((item, index) => (
                     <div key={index} className="flex gap-2 items-start bg-muted/20 p-3 rounded-lg border border-border">
                       <div className="grid grid-cols-12 gap-2 flex-1">
-                        <div className="col-span-2 space-y-1"><Label className="text-xs">رقم الصنف</Label><Input className="h-8" value={item.itemCode} onChange={(e) => handleItemChange(index, "itemCode", e.target.value)} /></div>
-                        <div className="col-span-3 space-y-1"><Label className="text-xs">اسم الصنف</Label><Input className="h-8" value={item.itemName} onChange={(e) => handleItemChange(index, "itemName", e.target.value)} required /></div>
-                        <div className="col-span-2 space-y-1"><Label className="text-xs">الوحدة</Label><Input className="h-8" value={item.unit} onChange={(e) => handleItemChange(index, "unit", e.target.value)} /></div>
-                        <div className="col-span-1 space-y-1"><Label className="text-xs">الكمية</Label><Input type="number" min="1" className="h-8 p-1" value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))} required /></div>
-                        <div className="col-span-1 space-y-1"><Label className="text-xs">بونص</Label><Input type="number" min="0" className="h-8 p-1" value={item.bonus} onChange={(e) => handleItemChange(index, "bonus", Number(e.target.value))} /></div>
-                        <div className="col-span-1 space-y-1"><Label className="text-xs">السعر</Label><Input type="number" min="0" step="0.001" className="h-8 p-1" value={item.price} onChange={(e) => handleItemChange(index, "price", Number(e.target.value))} required /></div>
-                        <div className="col-span-2 space-y-1"><Label className="text-xs">الإجمالي</Label><div className="h-8 flex items-center px-2 bg-muted rounded border text-sm font-medium">{(item.quantity * item.price).toFixed(3)}</div></div>
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-xs">رقم الصنف</Label>
+                          <Input className="h-8" value={item.itemCode} onChange={(e) => handleItemChange(index, "itemCode", e.target.value)} />
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                          <Label className="text-xs">اسم الصنف</Label>
+                          <div className="flex gap-1">
+                            <Input
+                              className="h-8 flex-1"
+                              value={item.itemName}
+                              onChange={(e) => handleItemChange(index, "itemName", e.target.value)}
+                              required
+                              placeholder="أدخل أو اختر..."
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => openPicker(index)}
+                              title="اختر من الأصناف"
+                            >
+                              <Package className="h-3.5 w-3.5 text-violet-500" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-xs">الوحدة</Label>
+                          <Input className="h-8" value={item.unit} onChange={(e) => handleItemChange(index, "unit", e.target.value)} />
+                        </div>
+                        <div className="col-span-1 space-y-1">
+                          <Label className="text-xs">الكمية</Label>
+                          <Input type="number" min="1" className="h-8 p-1" value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", Number(e.target.value))} required />
+                        </div>
+                        <div className="col-span-1 space-y-1">
+                          <Label className="text-xs">بونص</Label>
+                          <Input type="number" min="0" className="h-8 p-1" value={item.bonus} onChange={(e) => handleItemChange(index, "bonus", Number(e.target.value))} />
+                        </div>
+                        <div className="col-span-1 space-y-1">
+                          <Label className="text-xs">السعر</Label>
+                          <Input type="number" min="0" step="0.001" className="h-8 p-1" value={item.price} onChange={(e) => handleItemChange(index, "price", Number(e.target.value))} required />
+                        </div>
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-xs">الإجمالي</Label>
+                          <div className="h-8 flex items-center px-2 bg-muted rounded border text-sm font-medium">
+                            {(item.quantity * item.price).toFixed(3)}
+                          </div>
+                        </div>
                       </div>
-                      <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8 mt-5" onClick={() => removeItem(index)}><Trash2 className="h-4 w-4" /></Button>
+                      <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8 mt-5" onClick={() => removeItem(index)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
-                  {formData.items.length === 0 && <div className="text-center p-4 text-muted-foreground text-sm border rounded-lg border-dashed">لم يتم إضافة أصناف بعد</div>}
+                  {formData.items.length === 0 && (
+                    <div className="text-center p-4 text-muted-foreground text-sm border rounded-lg border-dashed">
+                      لم يتم إضافة أصناف بعد
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Totals */}
               <div className="flex justify-end pt-4 border-t border-border">
                 <div className="w-64 space-y-3 bg-muted/20 p-4 rounded-xl border border-border">
-                  <div className="flex justify-between items-center text-sm"><span>الإجمالي قبل الخصم:</span><span className="font-semibold">{subtotal.toFixed(3)}</span></div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span>الإجمالي قبل الخصم:</span>
+                    <span className="font-semibold">{subtotal.toFixed(3)}</span>
+                  </div>
                   <div className="flex justify-between items-center text-sm">
                     <span>قيمة الخصم:</span>
                     <Input type="number" min="0" step="0.001" className="w-24 h-8 text-left" dir="ltr" name="discount" value={formData.discount} onChange={handleChange} />
@@ -439,19 +589,17 @@ export default function InvoiceForm() {
             </form>
           </div>
 
-          {/* Screen-only scaled preview — RTL: anchor to top-right */}
+          {/* Screen preview */}
           <div className="print:hidden w-full flex justify-center">
-            <div
-              style={{
-                position: "relative",
-                width: "calc(210mm * 0.55)",
-                height: "calc(297mm * 0.55)",
-                overflow: "hidden",
-                borderRadius: "4px",
-                boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-                flexShrink: 0,
-              }}
-            >
+            <div style={{
+              position: "relative",
+              width: "calc(210mm * 0.55)",
+              height: "calc(297mm * 0.55)",
+              overflow: "hidden",
+              borderRadius: "4px",
+              boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
+              flexShrink: 0,
+            }}>
               <div
                 dir="rtl"
                 style={{

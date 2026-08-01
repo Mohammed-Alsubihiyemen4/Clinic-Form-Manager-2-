@@ -9,6 +9,9 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("employee"), // administrator, manager, employee, viewer
   isActive: boolean("is_active").notNull().default(true),
+  // JSON array of allowed page keys e.g. ["dashboard","invoices","training-certificates"]
+  // null = no restriction (administrator always gets all access)
+  permissions: text("permissions"),
   lastLogin: timestamp("last_login", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

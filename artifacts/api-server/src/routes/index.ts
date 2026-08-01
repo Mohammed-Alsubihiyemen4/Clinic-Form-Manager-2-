@@ -9,9 +9,12 @@ import doctorsRouter from "./doctors";
 import usersRouter from "./users";
 import settingsRouter from "./settings";
 import auditLogsRouter from "./audit-logs";
+import authRouter from "./auth";
+import productsRouter from "./products";
 
 const router: IRouter = Router();
 
+router.use(authRouter);
 router.use(healthRouter);
 router.use(dashboardRouter);
 router.use(trainingCertificatesRouter);
@@ -22,5 +25,6 @@ router.use(doctorsRouter);
 router.use(usersRouter);
 router.use(settingsRouter);
 router.use(auditLogsRouter);
+router.use(productsRouter);
 
 export default router;

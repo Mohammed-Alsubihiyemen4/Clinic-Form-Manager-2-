@@ -7,3 +7,4 @@ export * from "./training-certificates";
 export * from "./medical-reports";
 export * from "./invoices";
 export * from "./audit-logs";
+export * from "./products";
