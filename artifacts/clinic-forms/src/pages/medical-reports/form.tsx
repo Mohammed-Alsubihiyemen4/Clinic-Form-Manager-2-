@@ -211,17 +211,19 @@ export default function MedicalReportForm() {
       </table>
 
       {/* ── REPORT BODY TEXT — 20pt, bold, right-aligned, with breathing room ── */}
-      <div style={{
-        fontSize: "20pt",
-        fontWeight: "700",
-        lineHeight: "1.75",
-        textAlign: "right",
-        marginTop: "6mm",
-        marginBottom: "8mm",
-        color: "#000",
-        whiteSpace: "pre-wrap",
-        fontFamily: "'Arial', 'Cairo', sans-serif",
-      }}>
+      <div
+        style={{
+          fontSize: "20pt",
+          fontWeight: "700",
+          lineHeight: "1.75",
+          textAlign: "right",
+          marginTop: "6mm",
+          marginBottom: "8mm",
+          color: "#000",
+          whiteSpace: "pre-wrap",
+          fontFamily: "'Arial', 'Cairo', sans-serif",
+        }}
+        className="text-right mt-[97px] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px] rounded-tl-[0px] rounded-tr-[0px] rounded-br-[0px] rounded-bl-[0px] pl-[10px] pr-[10px] pt-[13px] pb-[13px]">
         {formData.reportText ||
           (isFemale
             ? "المذكورة أعلاه تعاني من اضطرابات نفسية وعصبية (اكتئاب)  مع نوبات تشنجات متكررة (صرع)وبحاجة إلى عمل تخطيط للدماغ وعلاجات باستمرار مع متابعة عيادة الباطنية و الأعصاب بانتظام ."
