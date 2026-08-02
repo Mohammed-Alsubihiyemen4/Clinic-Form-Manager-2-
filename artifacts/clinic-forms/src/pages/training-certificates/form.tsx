@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Printer, Save } from "lucide-react";
+import { ArrowRight, Printer, Save, FileText } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 function fmtDate(d: string) {
@@ -74,6 +74,32 @@ export default function TrainingCertificateForm() {
         onSuccess: () => { toast({ title: "تم تحديث الإفادة بنجاح" }); queryClient.invalidateQueries({ queryKey: getGetTrainingCertificateQueryKey(id) }); },
       });
     }
+  };
+
+  const exportWord = () => {
+    const isFem = formData.gender === "female";
+    const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>إفادة تدريب</title>
+<style>body{font-family:Arial;direction:rtl;font-size:16pt;}h1{text-align:center;text-decoration:underline;font-size:28pt;}h2{text-align:center;font-size:26pt;}p{font-size:16pt;font-weight:bold;line-height:2;}</style>
+</head><body>
+<h1>إفـادة تـدريب</h1>
+<h2>يشهد مستوصف العصار الطبي</h2>
+<p style="text-align:center;font-size:18pt">${isFem ? "أن الطالبة" : "أن الطالب"} / <u>${formData.traineeName}</u></p>
+<p>قد ${isFem ? "تدربت" : "تدرب"} لدينا بالمستوصف خلال الفترة من تاريخ <strong>${fmtDate(formData.startDate)}م</strong> إلى تاريخ <strong>${fmtDate(formData.endDate)}م</strong></p>
+<p>${isFem
+  ? "والمذكورة مثالاً لحسن السلوك والالتزام والعمل الجماعي والاحترام المتبادل بين زملائها وحريصة على اكتساب المهارات الطبية والاستفادة منها."
+  : "والمذكور مثالاً لحسن السلوك والالتزام والعمل الجماعي والاحترام المتبادل بين زملائه وحريصاً على اكتساب المهارات الطبية والاستفادة منها."}</p>
+<p style="text-align:center;font-size:20pt">متمنين ${isFem ? "لها" : "له"} التوفيق في حياته${isFem ? "ا" : ""} العلمية والعملية</p>
+<br/><br/>
+<table style="width:100%"><tr>
+<td style="text-align:right;width:100%"><p>إدارة المستوصف<br/>د/ إبراهيم عصار</p></td>
+</tr></table>
+</body></html>`;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `إفادة-تدريب-${cert?.certificateNumber || formData.traineeName}.doc`;
+    a.click(); URL.revokeObjectURL(url);
   };
 
   if (isLoading && !isNew) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
@@ -266,12 +292,17 @@ export default function TrainingCertificateForm() {
                   <Save className="mr-2 h-4 w-4" />
                   {isNew ? "حفظ وإصدار" : "حفظ التعديلات"}
                 </Button>
-                {!isNew && (
-                  <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
-                    <Printer className="mr-2 h-4 w-4" />طباعة الإفادة
-                  </Button>
-                )}
               </div>
+              {!isNew && (
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
+                    <Printer className="mr-2 h-4 w-4" />PDF / طباعة
+                  </Button>
+                  <Button type="button" variant="outline" onClick={exportWord} className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50">
+                    <FileText className="mr-2 h-4 w-4" />تصدير Word
+                  </Button>
+                </div>
+              )}
             </form>
           </div>
 

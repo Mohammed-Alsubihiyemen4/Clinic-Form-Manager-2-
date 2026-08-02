@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, and, gte, lte, or } from "drizzle-orm";
+import { eq, ilike, and, gte, lte, or, sql } from "drizzle-orm";
 import { db, invoicesTable, invoiceItemsTable, customersTable, countersTable, auditLogsTable } from "@workspace/db";
 import {
   ListInvoicesQueryParams,
@@ -18,11 +18,10 @@ import {
 const router: IRouter = Router();
 
 async function nextNumber(): Promise<string> {
-  await db.execute({
-    sql: `INSERT INTO counters (name, current_value) VALUES ($1, 1)
-          ON CONFLICT (name) DO UPDATE SET current_value = counters.current_value + 1`,
-    params: ["invoice"],
-  } as Parameters<typeof db.execute>[0]);
+  await db.execute(
+    sql`INSERT INTO counters (name, current_value) VALUES ('invoice', 1)
+        ON CONFLICT (name) DO UPDATE SET current_value = counters.current_value + 1`
+  );
   const rows = await db.select().from(countersTable).where(eq(countersTable.name, "invoice"));
   const val = rows[0]?.currentValue ?? 1;
   return `INV-${String(val).padStart(5, "0")}`;

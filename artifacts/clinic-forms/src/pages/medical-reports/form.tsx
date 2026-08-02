@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowRight, Printer, Save } from "lucide-react";
+import { ArrowRight, Printer, Save, FileText } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 function fmtDate(d: string) {
@@ -97,6 +97,35 @@ export default function MedicalReportForm() {
         onSuccess: () => { toast({ title: "تم تحديث التقرير بنجاح" }); queryClient.invalidateQueries({ queryKey: getGetMedicalReportQueryKey(id) }); },
       });
     }
+  };
+
+  const exportWord = () => {
+    const doctorName = selectedDoctor ? `د/${selectedDoctor.name}` : "د/عبدالله عصار";
+    const isFem = formData.gender === "female";
+    const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>إفادة طبية</title>
+<style>body{font-family:Arial;direction:rtl;font-size:14pt;}h1{text-align:center;text-decoration:underline;}p{font-size:16pt;font-weight:bold;line-height:1.8;}</style>
+</head><body>
+<h1 style="font-size:24pt">إفادة طبية</h1>
+<p style="text-align:left;font-size:13pt">التاريخ: ${fmtDate(formData.reportDate)}م &nbsp;&nbsp; رقم التقرير: ${report?.reportNumber || "—"}</p>
+<br/>
+<p>اسم المريض: <u>${formData.patientName}</u> &nbsp;&nbsp;&nbsp; العمر: <u>${formData.age} سنة</u></p>
+<p>التشخيص: <u>${formData.diagnosis}</u> &nbsp;&nbsp;&nbsp; الجنس: <u>${isFem ? "F" : "M"}</u></p>
+<br/>
+<p style="font-size:18pt">${formData.reportText}</p>
+<br/><br/>
+<p style="font-size:12pt">هذا بناءً على طلب المريض وحسب التقرير المرفق معه ولا يعتبر تقرير جنائياً</p>
+<br/><br/>
+<table style="width:100%"><tr>
+<td style="text-align:right;width:50%"><p>طبيب المعالج<br/>${doctorName}</p></td>
+<td style="text-align:right;width:50%"><p>إدارة المستوصف<br/>د/إبراهيم عصار</p></td>
+</tr></table>
+</body></html>`;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `تقرير-${report?.reportNumber || formData.patientName}.doc`;
+    a.click(); URL.revokeObjectURL(url);
   };
 
   if (isLoading && !isNew) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
@@ -361,12 +390,17 @@ export default function MedicalReportForm() {
                   <Save className="mr-2 h-4 w-4" />
                   {isNew ? "حفظ وإصدار" : "حفظ التعديلات"}
                 </Button>
-                {!isNew && (
-                  <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
-                    <Printer className="mr-2 h-4 w-4" />طباعة التقرير
-                  </Button>
-                )}
               </div>
+              {!isNew && (
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
+                    <Printer className="mr-2 h-4 w-4" />PDF / طباعة
+                  </Button>
+                  <Button type="button" variant="outline" onClick={exportWord} className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50">
+                    <FileText className="mr-2 h-4 w-4" />تصدير Word
+                  </Button>
+                </div>
+              )}
             </form>
           </div>
 

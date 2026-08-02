@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowRight, Printer, Save, Plus, Trash2, Package, Search } from "lucide-react";
+import { ArrowRight, Printer, Save, Plus, Trash2, Package, Search, FileText, Sheet } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Product } from "@/pages/products";
 
@@ -145,6 +145,49 @@ export default function InvoiceForm() {
 
   const subtotal = formData.items.reduce((s, it) => s + it.quantity * it.price, 0);
   const grandTotal = subtotal - (formData.discount || 0);
+
+  const exportWord = () => {
+    const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>فاتورة</title>
+<style>body{font-family:Arial;direction:rtl;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #000;padding:5px;text-align:center;}th{background:#1a9e8f;color:#fff;font-weight:bold;}</style>
+</head><body>
+<h2 style="text-align:center;border:1px solid #000;display:inline-block;padding:3px 30px;">فاتورة بيع نقدية</h2>
+<p><strong>رقم الفاتورة:</strong> ${invoice?.invoiceNumber || "—"} &nbsp;&nbsp; <strong>التاريخ:</strong> ${fmtDate(formData.invoiceDate)}م</p>
+<p><strong>العميل:</strong> ${formData.customerName || "عميل نقدي"} &nbsp;&nbsp; <strong>الفرع:</strong> ${formData.branch} &nbsp;&nbsp; <strong>المتحصل:</strong> ${formData.collector}</p>
+<p><strong>القطاع:</strong> ${formData.section} &nbsp;&nbsp; <strong>القسم:</strong> ${formData.department} &nbsp;&nbsp; <strong>ملاحظات:</strong> ${formData.notes}</p>
+<br/>
+<table><thead><tr><th>م</th><th>رقم الصنف</th><th>اسم الصنف</th><th>الوحدة</th><th>الكمية</th><th>البونص</th><th>السعر</th><th>القيمة</th></tr></thead>
+<tbody>${formData.items.map((item, i) => `<tr><td>${i + 1}</td><td>${item.itemCode}</td><td style="text-align:right">${item.itemName}</td><td>${item.unit}</td><td>${item.quantity}</td><td>${item.bonus ?? 0}</td><td>${item.price.toFixed(3)}</td><td>${(item.quantity * item.price).toFixed(3)}</td></tr>`).join("")}</tbody>
+</table>
+<br/>
+<table style="width:200px;float:left"><tr><td><strong>الإجمالي قبل الخصم</strong></td><td>${subtotal.toFixed(3)}</td></tr>
+<tr><td><strong>قيمة الخصم</strong></td><td>${(formData.discount || 0).toFixed(3)}</td></tr>
+<tr><td><strong>الإجمالي</strong></td><td><strong>${grandTotal.toFixed(3)}</strong></td></tr></table>
+</body></html>`;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `فاتورة-${invoice?.invoiceNumber || "جديدة"}.doc`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportExcel = () => {
+    const html = `<html><head><meta charset='utf-8'></head><body>
+<table>
+<tr><th colspan="8" style="text-align:center;font-size:14pt;font-weight:bold">فاتورة بيع نقدية - ${invoice?.invoiceNumber || ""}</th></tr>
+<tr><td colspan="8">التاريخ: ${fmtDate(formData.invoiceDate)}م &nbsp; العميل: ${formData.customerName || "عميل نقدي"} &nbsp; الفرع: ${formData.branch}</td></tr>
+<tr><th>م</th><th>رقم الصنف</th><th>اسم الصنف</th><th>الوحدة</th><th>الكمية</th><th>البونص</th><th>السعر</th><th>القيمة</th></tr>
+${formData.items.map((item, i) => `<tr><td>${i + 1}</td><td>${item.itemCode}</td><td>${item.itemName}</td><td>${item.unit}</td><td>${item.quantity}</td><td>${item.bonus ?? 0}</td><td>${item.price.toFixed(3)}</td><td>${(item.quantity * item.price).toFixed(3)}</td></tr>`).join("")}
+<tr><td colspan="7" style="text-align:right"><strong>الإجمالي قبل الخصم</strong></td><td>${subtotal.toFixed(3)}</td></tr>
+<tr><td colspan="7" style="text-align:right"><strong>قيمة الخصم</strong></td><td>${(formData.discount || 0).toFixed(3)}</td></tr>
+<tr><td colspan="7" style="text-align:right"><strong>الإجمالي النهائي</strong></td><td><strong>${grandTotal.toFixed(3)}</strong></td></tr>
+</table></body></html>`;
+    const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `فاتورة-${invoice?.invoiceNumber || "جديدة"}.xls`;
+    a.click(); URL.revokeObjectURL(url);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -580,12 +623,20 @@ export default function InvoiceForm() {
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1">
                   <Save className="mr-2 h-4 w-4" />{isNew ? "حفظ الفاتورة" : "حفظ التعديلات"}
                 </Button>
-                {!isNew && (
-                  <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
-                    <Printer className="mr-2 h-4 w-4" />طباعة الفاتورة
-                  </Button>
-                )}
               </div>
+              {!isNew && (
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => window.print()} className="flex-1">
+                    <Printer className="mr-2 h-4 w-4" />PDF / طباعة
+                  </Button>
+                  <Button type="button" variant="outline" onClick={exportWord} className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50">
+                    <FileText className="mr-2 h-4 w-4" />تصدير Word
+                  </Button>
+                  <Button type="button" variant="outline" onClick={exportExcel} className="flex-1 text-green-600 border-green-300 hover:bg-green-50">
+                    <Sheet className="mr-2 h-4 w-4" />تصدير Excel
+                  </Button>
+                </div>
+              )}
             </form>
           </div>
 
