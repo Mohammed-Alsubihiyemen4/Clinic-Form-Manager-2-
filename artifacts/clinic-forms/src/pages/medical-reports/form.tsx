@@ -26,15 +26,17 @@ function fmtDate(d: string) {
 
 function DotLine({ value, minWidth = "130px" }: { value: string; minWidth?: string }) {
   return (
-    <span style={{
-      borderBottom: "1.5px solid #000",
-      display: "inline-block",
-      minWidth,
-      paddingBottom: "7px",
-      whiteSpace: "nowrap",
-      fontFamily: "'Arial', 'Cairo', sans-serif",
-      fontWeight: "700",
-    }}>
+    <span
+      style={{
+        borderBottom: "1.5px solid #000",
+        display: "inline-block",
+        minWidth,
+        paddingBottom: "7px",
+        whiteSpace: "nowrap",
+        fontFamily: "'Arial', 'Cairo', sans-serif",
+        fontWeight: "700",
+      }}
+      className="border-b-[1px] mt-[-10px] mb-[-10px] pb-[0px]">
       {value || "\u00A0"}
     </span>
   );
